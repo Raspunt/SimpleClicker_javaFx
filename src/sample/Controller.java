@@ -7,6 +7,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.text.Text;
 
+import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,20 +17,21 @@ import java.util.ResourceBundle;
 
 public class Controller {
 
-     static int CountClicks = 0; // стартовое значение || Количество кликов
-     static int HowPlusToPow = 1; // стартовое значение || сколько прибавляется после  нажатие  upgrade
-     static int HowPlusAutoClick = 1 ; //стартовое значение || сколько прибавиться после  нажатие на AutoClickUpdate
-     static int HowPlusAfterUpgradeAutoClick = 1 ;// сколько будет прибавлять после  улучшения AutoClick
-     static PriceToBuy pr = new PriceToBuy();
-     static Map<Integer,Integer> MapPrice = new HashMap<>(pr.getPrice());
-     static ArrayList<Integer> PriceKey = new ArrayList<>();
-     static ArrayList<Integer> PriceIncreaseVal = new ArrayList<>();
-     static int price  ;
-     static int AutoPrice ;
-     static int numCount = 1;
+    static int CountClicks = 0; // стартовое значение || Количество кликов
+    static int HowPlusToPow = 1; // стартовое значение || сколько прибавляется после  нажатие  upgrade
+    static int HowPlusAutoClick = 1; //стартовое значение || сколько прибавиться после  нажатие на AutoClickUpdate
+    static int HowPlusAfterUpgradeAutoClick = 1;// сколько будет прибавлять после  улучшения AutoClick
+    static PriceToBuy pr = new PriceToBuy();
+    static Map<Integer, Integer> MapPrice = new HashMap<>(pr.getPrice());
+    static ArrayList<Integer> PriceKey = new ArrayList<>();
+    static ArrayList<Integer> PriceIncreaseVal = new ArrayList<>();
+    static int price;
+    static int AutoPrice;
+    static int numCount = 1;
+    static File mySave = new File("save.txt");
 
 
-    public static  void printArr(){
+    public static void printArr() {
         for (Map.Entry<Integer, Integer> entry : MapPrice.entrySet()) {
             System.out.println(entry.getKey() + "/" + entry.getValue());
             PriceKey.add(entry.getKey());
@@ -43,8 +45,6 @@ public class Controller {
         price = PriceKey.get(1);
         AutoPrice = PriceKey.get(0);
     }
-
-
 
 
     @FXML
@@ -73,7 +73,10 @@ public class Controller {
 
     @FXML
     void initialize() {
+        StartMoreThread();
         printArr();
+        ReadSaves(mySave);
+        Power.setText(String.valueOf(CountClicks));
         upgradeButton.setText("улучшить Клик " + PriceKey.get(1));
         autoClick.setText("Улучшить АвтоТанец " + AutoPrice);
 
@@ -90,51 +93,42 @@ public class Controller {
             public void handle(MouseEvent event) {
                 CountClicks += HowPlusToPow;
 
+
                 PowerDance.setText(String.valueOf(HowPlusToPow));
-                    if (numCount == 1) {
-                        numCount++;
-
-                        new Thread(() -> {
-                            while (true) {
-
-                                Power.setText(String.valueOf(CountClicks));
-                            }
-                        }).start();
-                    }
 
 
 
             }
         });
-        upgradeButton.setOnAction(event ->{
+        upgradeButton.setOnAction(event -> {
 
             btnUpdatePlus(1);
 
         });
 
-        autoClick.setOnAction(event ->{
+        autoClick.setOnAction(event -> {
 
-        if (CountClicks >= AutoPrice) {
-            CountClicks = CountClicks - AutoPrice ;
-            AutoPrice = AutoPrice * PriceIncreaseVal.get(0);
-            autoClick.setText("Улучшить АвтоТанец " + AutoPrice);
-            HowPlusAutoClick += HowPlusAfterUpgradeAutoClick;
-            if (numCount == 2) {
-                numCount++;
-                new Thread(() -> {
-                    while (true) {
-                        try {
-                            Thread.sleep(500);
-                            CountClicks += HowPlusAutoClick;
-                            PowerAutoClick.setText(String.valueOf(HowPlusAutoClick));
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+            if (CountClicks >= AutoPrice) {
+                CountClicks = CountClicks - AutoPrice;
+                AutoPrice = AutoPrice * PriceIncreaseVal.get(0);
+                autoClick.setText("Улучшить АвтоТанец " + AutoPrice);
+                HowPlusAutoClick += HowPlusAfterUpgradeAutoClick;
+                if (numCount == 1) {
+                    numCount++;
+                    new Thread(() -> {
+                        while (true) {
+                            try {
+                                Thread.sleep(500);
+                                CountClicks += HowPlusAutoClick;
+                                PowerAutoClick.setText(String.valueOf(HowPlusAutoClick));
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                         }
-                    }
-                }).start();
+                    }).start();
 
+                }
             }
-        }
 
 
         });
@@ -142,15 +136,73 @@ public class Controller {
 
     }
 
-    void btnUpdatePlus(int plus){
+    void btnUpdatePlus(int plus) {
 
-        if (CountClicks >= price){
-            CountClicks = CountClicks - price ;
-            price = price * PriceIncreaseVal.get(1) ;
-            System.out.println("damage " + (HowPlusToPow + 1) );
+        if (CountClicks >= price) {
+            CountClicks = CountClicks - price;
+            price = price * PriceIncreaseVal.get(1);
+            System.out.println("damage " + (HowPlusToPow + 1));
             HowPlusToPow += plus;
             upgradeButton.setText("улучшить Клик " + price);
 
         }
+    }
+
+    public static void CreateFolder() {
+        try {
+
+            if (mySave.exists()) {
+
+                FileWriter writer = new FileWriter(mySave);
+                writer.write(Integer.toString(CountClicks));
+                writer.close();
+
+            }
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public static void ReadSaves(File myObj) {
+
+        try {
+            BufferedReader fileReader = new BufferedReader(new FileReader(myObj));
+            String save = fileReader.readLine();
+            CountClicks = Integer.parseInt(save);
+            System.out.println(save + " сейф");
+            System.out.println(CountClicks + " кол во кликов");
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void StartMoreThread() {
+        new Thread(() -> {
+            while (true) {
+                Power.setText(String.valueOf(CountClicks));
+            }
+        }).start();
+
+                new Thread(() -> {
+                    while (true) {
+                        try {
+                            Thread.sleep(100);
+                            CreateFolder();
+
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+
+
+
     }
 }
